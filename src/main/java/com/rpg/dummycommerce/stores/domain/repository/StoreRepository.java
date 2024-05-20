@@ -1,5 +1,6 @@
 package com.rpg.dummycommerce.stores.domain.repository;
 
+
 import com.rpg.dummycommerce.stores.domain.model.StoreModel;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
