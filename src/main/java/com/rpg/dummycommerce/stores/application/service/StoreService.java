@@ -1,62 +1,51 @@
 package com.rpg.dummycommerce.stores.application.service;
 
 import com.rpg.dummycommerce.stores.domain.dto.StoreDto;
+import com.rpg.dummycommerce.stores.domain.exception.StoreNotFoundException;
 import com.rpg.dummycommerce.stores.domain.model.StoreModel;
-import com.rpg.dummycommerce.stores.domain.repository.StoreRepository;
+import com.rpg.dummycommerce.stores.infrastructure.repository.StoreRepository;
+import jakarta.persistence.PersistenceException;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Component;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.stereotype.Service;
 
-import java.util.Optional;
+import java.sql.SQLException;
 import java.util.UUID;
 
-@Component
+@Service
 public class StoreService {
 
     @Autowired
     private StoreRepository storeRepository;
 
-    public ResponseEntity<StoreModel> saveStore(StoreDto storeDto) {
+    public StoreModel saveStore(StoreDto storeDto) {
         var storeModel = new StoreModel();
         BeanUtils.copyProperties(storeDto, storeModel);
         storeModel.setDeleted(false);
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(storeRepository.save(storeModel));
+        return storeRepository.save(storeModel);
     }
 
-    public ResponseEntity<Object> getStore(UUID id) {
-        Optional<StoreModel> storeO = storeRepository.findById(id);
-        if (storeNotFoundOrDeleted(storeO)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Store not found.");
-        }
-        return ResponseEntity.status(HttpStatus.OK).body(storeO.get());
+    public StoreModel getStoreById(UUID id) {
+        return getStore(id);
     }
 
-    public ResponseEntity<Object> updateStore(StoreDto storeDto, UUID id) {
-        Optional<StoreModel> storeO = storeRepository.findById(id);
-        if (storeNotFoundOrDeleted(storeO)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Store not found");
-        }
-        var storeModel = new StoreModel();
+    public StoreModel updateStore(StoreDto storeDto, UUID id) {
+        var storeModel = getStore(id);
         BeanUtils.copyProperties(storeDto, storeModel);
-        return ResponseEntity.status(HttpStatus.OK).body(storeRepository.save(storeModel));
+        storeRepository.save(storeModel);
+        return storeModel;
     }
 
-    public ResponseEntity<Object> deleteStore(UUID id) {
-        Optional<StoreModel> storeO = storeRepository.findById(id);
-        if (storeNotFoundOrDeleted(storeO)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Store not found.");
-        }
-        var storeModel = new StoreModel();
-        BeanUtils.copyProperties(storeO.get(), storeModel);
+    public void deleteStore(UUID id) {
+        var storeModel = getStore(id);
         storeModel.setDeleted(true);
         storeRepository.save(storeModel);
-        return ResponseEntity.status(HttpStatus.OK).body("Store deleted");
     }
 
-    private boolean storeNotFoundOrDeleted(Optional<StoreModel> storeO) {
-        return storeO.isEmpty() || storeO.get().isDeleted();
+    private StoreModel getStore(UUID id) {
+        return storeRepository.findById(id)
+                .filter(store -> !store.isDeleted())
+                .orElseThrow(() -> new StoreNotFoundException("Store not found id " + id));
     }
 }
