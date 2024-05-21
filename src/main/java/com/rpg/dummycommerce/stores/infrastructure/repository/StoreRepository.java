@@ -1,4 +1,4 @@
-package com.rpg.dummycommerce.stores.domain.repository;
+package com.rpg.dummycommerce.stores.infrastructure.repository;
 
 
 import com.rpg.dummycommerce.stores.domain.model.StoreModel;
